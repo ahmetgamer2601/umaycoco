@@ -127,7 +127,7 @@
       const k = Math.min(1, 64 / Math.max(bw, bh)), w = Math.max(4, Math.round(bw * k)), h = Math.max(4, Math.round(bh * k));
       cropC.width = w; cropC.height = h;
       cropX.drawImage(el.video, d.x1, d.y1, bw, bh, 0, 0, w, h);
-      d.color = C.lightColor(cropX.getImageData(0, 0, w, h).data, w, h).color;
+      const lc = C.lightColor(cropX.getImageData(0, 0, w, h).data, w, h); d.color = lc.color; d.dbg = lc.dbg;
     }
     return dets;
   }
@@ -157,7 +157,7 @@
       const cl = cfg.classes[d.cls], x = d.x1 * sc + ox, y = d.y1 * sc + oy, w = (d.x2 - d.x1) * sc, h = (d.y2 - d.y1) * sc;
       const col = cl.say ? '#3fd0b4' : '#7d86a8';
       octx.strokeStyle = col; octx.strokeRect(x, y, w, h);
-      const label = cl.tr + (d.color ? ' ' + ({ kirmizi: 'KIRMIZI', sari: 'SARI', yesil: 'YEŞİL' })[d.color] : '') + ' ' + Math.round(d.score * 100);
+      const label = cl.tr + (d.color ? ' ' + ({ kirmizi: 'KIRMIZI', sari: 'SARI', yesil: 'YEŞİL' })[d.color] : '') + ' ' + Math.round(d.score * 100) + (d.dbg ? ' [' + d.dbg + ']' : '');
       const tw = octx.measureText(label).width + 8;
       octx.fillStyle = col; octx.fillRect(x, Math.max(0, y - 18), tw, 18);
       octx.fillStyle = '#04110e'; octx.fillText(label, x + 4, Math.max(0, y - 18) + 2);
