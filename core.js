@@ -75,7 +75,7 @@
   /* Trafik ışığı rengi: kutunun içindeki parlak ve doygun pikselleri sayar.
      d: RGBA dizisi (kırpılmış kutu), w,h: kırpmanın boyutu. Döner: {color:'kirmizi'|'sari'|'yesil'|null, conf} */
   function lightColor(d, w, h) {
-    if (w < 4 || h < 4) return { color: null, conf: 0 };
+    if (w < 4 || h < 4) return { color: null, conf: 0, dbg: '' };
     const x0 = Math.floor(w * 0.08), x1 = Math.ceil(w * 0.92), y0 = Math.floor(h * 0.04), y1 = Math.ceil(h * 0.96);
     const vertical = h >= w * 1.5, K = ['r', 'y', 'g'];
     const sc = { r: 0, y: 0, g: 0 }, EXP = { r: 0, y: 1, g: 2 };
@@ -89,7 +89,8 @@
         if (mx === r) hh = 60 * (((g - b) / dl) % 6); else if (mx === g) hh = 60 * ((b - r) / dl + 2); else hh = 60 * ((r - g) / dl + 4);
         if (hh < 0) hh += 360;
         let k = null;
-        if (hh <= 20 || hh >= 340) k = 'r'; else if (hh >= 35 && hh <= 62) k = 'y'; else if (hh >= 90 && hh <= 190) k = 'g';
+        const sat = (mx - mn) / mx;            // kırmızı ve sarı için daha sıkı: pembe/turuncu/ten rengi yüzeyler kırmızı sayılmasın
+        if ((hh <= 12 || hh >= 344) && sat >= 0.45) k = 'r'; else if (hh >= 35 && hh <= 62 && sat >= 0.5) k = 'y'; else if (hh >= 90 && hh <= 190) k = 'g';
         if (!k) continue;
         let wgt = 1;
         if (vertical) wgt = band === EXP[k] ? 1.4 : (Math.abs(band - EXP[k]) === 2 ? 0.5 : 0.9);   // üstte kırmızı, altta yeşil beklenir
@@ -98,8 +99,9 @@
     }
     const arr = K.map(k => [k, sc[k]]).sort((a, b) => b[1] - a[1]);
     const top = arr[0], sec = arr[1][1], area = (x1 - x0) * (y1 - y0);
-    if (top[1] < Math.max(3, area * 0.004) || top[1] < 1.8 * sec) return { color: null, conf: 0 };
-    return { color: { r: 'kirmizi', y: 'sari', g: 'yesil' }[top[0]], conf: top[1] / (top[1] + sec) };
+    const dbg = Math.round(sc.r) + '/' + Math.round(sc.y) + '/' + Math.round(sc.g);   // kırmızı/sarı/yeşil piksel sayıları (hata ayıklama)
+    if (top[1] < Math.max(3, area * 0.004) || top[1] < 1.8 * sec) return { color: null, conf: 0, dbg };
+    return { color: { r: 'kirmizi', y: 'sari', g: 'yesil' }[top[0]], conf: top[1] / (top[1] + sec), dbg };
   }
   const COLOR_TR = { kirmizi: 'kırmızı', sari: 'sarı', yesil: 'yeşil' };
   const DIR_TR = { sol: 'solunuzda', sag: 'sağınızda', on: 'önünüzde' };
