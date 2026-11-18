@@ -44,13 +44,17 @@
     trVoice = vs.find(v => /^tr([-_]|$)/i.test(v.lang)) || null;
   }
   if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-  let speaking = false;
+  let speaking = false, speakUntil = 0;
+  function isSpeaking() { if (speaking && performance.now() > speakUntil) speaking = false; return speaking; }
   function speak(text, urgent) {
     if (!S.speakOn || !('speechSynthesis' in window)) return false;
     if (urgent) speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'tr-TR'; if (trVoice) u.voice = trVoice; u.rate = S.rate;
-    speaking = true; u.onend = u.onerror = () => { speaking = false; };
+    // iOS'ta bazen "bitti" olayı hiç gelmez; konuşma süresini kendimiz tahmin edip kilidi zamanla açarız.
+    const est = Math.max(1500, (text.length * 95) / (S.rate || 1) + 900);
+    speakUntil = performance.now() + est; speaking = true;
+    u.onend = u.onerror = () => { speaking = false; speakUntil = 0; };
     speechSynthesis.speak(u); return true;
   }
   el.test.addEventListener('click', () => {
@@ -239,10 +243,10 @@
     speaker.repeatMs = S.rep * 1000;
     const ready = speaker.update(cands, now);
     speaker.markNotNear(cands);
-    if (!ready.length) { if (!cands.length && !speaking) setSay('Dinleniyor…'); return; }
+    if (!ready.length) { if (!cands.length && !isSpeaking()) setSay('Dinleniyor…'); return; }
     const top = ready.slice(0, 2);
     const urgent = top[0].isNear;
-    if (speaking && !urgent) return;                  // acil değilse mevcut cümleyi bölme
+    if (isSpeaking() && !urgent) return;                  // acil değilse mevcut cümleyi bölme
     const text = top.map(C.phrase).join('. ');
     setSay(text, urgent);
     if (speak(text, urgent) || !S.speakOn) top.forEach(c => speaker.markSaid(c, now));
